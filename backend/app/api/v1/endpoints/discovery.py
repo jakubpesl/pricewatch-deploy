@@ -1,0 +1,101 @@
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.core.database import get_db
+from app.models.job import DiscoveryJob, JobStatus
+from app.models.product import Product
+from app.schemas.product import DiscoveryRequest, DiscoveryJobOut, ProductOut
+from app.workers.discovery_tasks import discover_product
+from datetime import datetime, timezone
+
+router = APIRouter()
+
+
+@router.post("/discover", response_model=DiscoveryJobOut, status_code=202)
+async def start_discovery(
+    body: DiscoveryRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Start a product discovery job. Returns immediately with job ID.
+    The actual scraping runs in a Celery worker.
+    Poll /jobs/{job_id} for status updates.
+    """
+    # Create job record
+    job = DiscoveryJob(
+        model_number=body.model_number,
+        status=JobStatus.PENDING,
+        sources_requested=body.markets,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(job)
+    await db.commit()
+    await db.refresh(job)
+
+    # Dispatch to Celery worker
+    celery_task = discover_product.delay(body.model_number, job.id)
+    job.celery_task_id = celery_task.id
+    await db.commit()
+
+    return job
+
+
+@router.get("/jobs/{job_id}", response_model=DiscoveryJobOut)
+async def get_job(job_id: int, db: AsyncSession = Depends(get_db)):
+    """Poll discovery job status."""
+    job = await db.get(DiscoveryJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@router.get("/products/{model_number}", response_model=ProductOut)
+async def get_product(model_number: str, db: AsyncSession = Depends(get_db)):
+    """Get product with all discovered retailers and their current prices."""
+    stmt = (
+        select(Product)
+        .where(Product.model_number == model_number)
+        .options()  # retailers loaded via relationship
+    )
+    result = await db.execute(stmt)
+    product = result.scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+
+@router.get("/products/{model_number}/prices")
+async def get_price_history(
+    model_number: str,
+    retailer_id: int | None = None,
+    days: int = 30,
+    db: AsyncSession = Depends(get_db),
+):
+    """Get price history for a product (optionally filtered by retailer)."""
+    from sqlalchemy import select, text
+    from app.models.product import PricePoint, ProductRetailer
+
+    stmt = (
+        select(PricePoint, ProductRetailer.retailer_name, ProductRetailer.country_code)
+        .join(ProductRetailer, PricePoint.retailer_id == ProductRetailer.id)
+        .join(Product, ProductRetailer.product_id == Product.id)
+        .where(Product.model_number == model_number)
+        .where(PricePoint.observed_at >= text(f"NOW() - INTERVAL '{days} days'"))
+    )
+    if retailer_id:
+        stmt = stmt.where(PricePoint.retailer_id == retailer_id)
+
+    result = await db.execute(stmt)
+    rows = result.all()
+    return [
+        {
+            "retailer_id": row[0].retailer_id,
+            "retailer_name": row[1],
+            "country_code": row[2],
+            "price": row[0].price,
+            "currency": row[0].currency,
+            "in_stock": row[0].in_stock,
+            "observed_at": row[0].observed_at,
+        }
+        for row in rows
+    ]
