@@ -1,27 +1,40 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.models.job import DiscoveryJob, JobStatus
 from app.models.product import Product
 from app.schemas.product import DiscoveryRequest, DiscoveryJobOut, ProductOut
-from app.workers.discovery_tasks import discover_product
+from app.services.discovery import run_discovery
 from datetime import datetime, timezone
+import structlog
 
+log = structlog.get_logger()
 router = APIRouter()
+
+
+async def _run_discovery_bg(model_number: str, job_id: int):
+    try:
+        async with AsyncSessionLocal() as db:
+            await run_discovery(model_number, job_id, db)
+    except Exception as e:
+        log.error("discovery.failed", model=model_number, job_id=job_id, error=str(e))
+        async with AsyncSessionLocal() as db:
+            job = await db.get(DiscoveryJob, job_id)
+            if job:
+                job.status = JobStatus.FAILED
+                job.error_message = str(e)
+                job.completed_at = datetime.now(timezone.utc)
+                await db.commit()
 
 
 @router.post("/discover", response_model=DiscoveryJobOut, status_code=202)
 async def start_discovery(
     body: DiscoveryRequest,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Start a product discovery job. Returns immediately with job ID.
-    The actual scraping runs in a Celery worker.
-    Poll /jobs/{job_id} for status updates.
-    """
-    # Create job record
+    """Start a product discovery job. Returns immediately with job ID. Poll /jobs/{job_id} for status."""
     job = DiscoveryJob(
         model_number=body.model_number,
         status=JobStatus.PENDING,
@@ -32,11 +45,7 @@ async def start_discovery(
     await db.commit()
     await db.refresh(job)
 
-    # Dispatch to Celery worker
-    celery_task = discover_product.delay(body.model_number, job.id)
-    job.celery_task_id = celery_task.id
-    await db.commit()
-
+    background_tasks.add_task(_run_discovery_bg, body.model_number, job.id)
     return job
 
 
