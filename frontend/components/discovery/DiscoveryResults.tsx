@@ -156,7 +156,7 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {paged.map((retailer) => (
-                <RetailerRow key={retailer.id} retailer={retailer} cheapestPrice={cheapest?.current_price} />
+                <RetailerRow key={retailer.id} retailer={retailer} cheapestPrice={cheapest?.current_price ?? undefined} />
               ))}
             </tbody>
           </table>
