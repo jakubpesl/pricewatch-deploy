@@ -7,8 +7,8 @@ import type { DiscoveryJob } from "@/types/api";
 const SOURCE_LABELS: Record<string, string> = {
   heureka: "Heureka CZ/SK",
   idealo: "Idealo DE/AT/FR/IT/ES/GB/PL",
-  google_shopping: "Google Shopping (16 trhů)",
-  google_organic: "Google organické výsledky",
+  google_shopping: "Google Shopping (16 markets)",
+  google_organic: "Google organic results",
   zbozi: "Zboží.cz",
   geizhals: "Geizhals AT/DE",
   bing_shopping: "Bing Shopping",
@@ -54,14 +54,14 @@ export function JobProgressBar({ jobId, onComplete }: Props) {
           {isRunning && <Loader2 className="w-5 h-5 text-violet-500 animate-spin" />}
           {isDone && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
           <span className="font-semibold text-slate-900">
-            {isRunning && "Prohledávám evropské trhy…"}
-            {isDone && `Hotovo — nalezeno ${job.retailers_found} obchodů`}
-            {isFailed && "Vyhledávání selhalo"}
+            {isRunning && "Searching European markets…"}
+            {isDone && `Done — found ${job.retailers_found} stores`}
+            {isFailed && "Search failed"}
           </span>
         </div>
         {isDone && (
           <span className="text-sm text-emerald-600 font-medium">
-            {job.retailers_found} obchodů
+            {job.retailers_found} stores
           </span>
         )}
       </div>

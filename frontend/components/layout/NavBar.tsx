@@ -11,9 +11,9 @@ export function NavBar() {
         </Link>
         <div className="flex gap-1 text-sm">
           {[
-            { href: "/", label: "Vyhledávání" },
+            { href: "/", label: "Search" },
             { href: "/monitors", label: "Monitoring" },
-            { href: "/alerts", label: "Upozornění" },
+            { href: "/alerts", label: "Alerts" },
           ].map(({ href, label }) => (
             <Link
               key={href}

@@ -68,14 +68,14 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
         <div>
           <h2 className="text-xl font-bold text-slate-900">{modelNumber}</h2>
           <p className="text-slate-500 text-sm">
-            {retailers.length} obchodů ve {countries.length} zemích
+            {retailers.length} stores in {countries.length} countries
           </p>
         </div>
         {cheapest && (
           <div className="card px-5 py-3 flex items-center gap-3">
             <TrendingDown className="w-5 h-5 text-emerald-500" />
             <div>
-              <div className="text-xs text-slate-500">Nejlevněji</div>
+              <div className="text-xs text-slate-500">Cheapest</div>
               <div className="font-bold text-emerald-600">
                 {cheapest.current_price?.toLocaleString()} {cheapest.currency}
               </div>
@@ -105,7 +105,7 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
               <span className="font-semibold">{cc}</span>
               {!isNaN(min) && (
                 <span className="text-xs text-slate-500 ml-1">
-                  od {min.toLocaleString()} {currency}
+                  from {min.toLocaleString()} {currency}
                 </span>
               )}
             </button>
@@ -122,21 +122,21 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
             onChange={(e) => setFilterStock(e.target.checked)}
             className="accent-violet-600"
           />
-          Pouze skladem
+          In stock only
         </label>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-sm text-slate-500">Řadit:</span>
+          <span className="text-sm text-slate-500">Sort:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white outline-none focus:border-violet-400"
           >
-            <option value="price_asc">Cena: nejlevnější</option>
-            <option value="price_desc">Cena: nejdražší</option>
-            <option value="country">Podle země</option>
+            <option value="price_asc">Price: lowest first</option>
+            <option value="price_desc">Price: highest first</option>
+            <option value="country">By country</option>
           </select>
         </div>
-        <div className="text-sm text-slate-400">{filtered.length} obchodů</div>
+        <div className="text-sm text-slate-400">{filtered.length} stores</div>
       </div>
 
       {/* Retailer table */}
@@ -145,12 +145,12 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Obchod</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Země</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Cena</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Sklad</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Hodnocení</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Zdroj</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Store</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Country</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Price</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Stock</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Rating</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Source</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -170,7 +170,7 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
               disabled={page === 0}
               className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg disabled:opacity-40 hover:bg-slate-50"
             >
-              ← Zpět
+              ← Back
             </button>
             <span className="text-sm text-slate-500">{page + 1} / {totalPages}</span>
             <button
@@ -178,7 +178,7 @@ export function DiscoveryResults({ modelNumber, jobId }: Props) {
               disabled={page >= totalPages - 1}
               className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg disabled:opacity-40 hover:bg-slate-50"
             >
-              Další →
+              Next →
             </button>
           </div>
         )}
@@ -209,7 +209,7 @@ function RetailerRow({ retailer, cheapestPrice }: { retailer: ProductRetailerOut
               {retailer.current_price.toLocaleString()} {retailer.currency}
             </span>
             {discount && (
-              <div className="text-xs text-slate-400">+{discount}% vs nejlevnější</div>
+              <div className="text-xs text-slate-400">+{discount}% vs cheapest</div>
             )}
           </div>
         ) : (
@@ -217,8 +217,8 @@ function RetailerRow({ retailer, cheapestPrice }: { retailer: ProductRetailerOut
         )}
       </td>
       <td className="px-4 py-3 text-center">
-        {retailer.in_stock === true && <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">Skladem</span>}
-        {retailer.in_stock === false && <span className="text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full">Vyprodáno</span>}
+        {retailer.in_stock === true && <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full">In stock</span>}
+        {retailer.in_stock === false && <span className="text-xs px-2 py-0.5 bg-red-50 text-red-600 rounded-full">Out of stock</span>}
         {retailer.in_stock === null && <span className="text-xs text-slate-400">?</span>}
       </td>
       <td className="px-4 py-3">
