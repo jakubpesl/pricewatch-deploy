@@ -60,6 +60,7 @@ class DiscoveryJobOut(BaseModel):
     status: str
     retailers_found: int
     sources_completed: list[str] | None
+    error_message: str | None = None
     started_at: datetime | None
     completed_at: datetime | None
     created_at: datetime

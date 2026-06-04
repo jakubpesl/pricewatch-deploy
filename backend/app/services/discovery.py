@@ -66,7 +66,13 @@ async def run_discovery(
             log.error("discovery.scraper_error", name=name, error=str(e))
             return name, []
 
-    tasks = [run_scraper(name, scraper) for name, scraper in scrapers]
+    # Limit to 1 concurrent scraper to stay within 512MB RAM (Render free tier)
+    semaphore = asyncio.Semaphore(1)
+    async def bounded_scraper(name: str, scraper):
+        async with semaphore:
+            return await run_scraper(name, scraper)
+
+    tasks = [bounded_scraper(name, scraper) for name, scraper in scrapers]
     scraper_results = await asyncio.gather(*tasks)
 
     for name, results in scraper_results:
