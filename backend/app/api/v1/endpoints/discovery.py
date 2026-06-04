@@ -13,10 +13,10 @@ log = structlog.get_logger()
 router = APIRouter()
 
 
-async def _run_discovery_bg(model_number: str, job_id: int):
+async def _run_discovery_bg(model_number: str, job_id: int, post_crawl: bool = False):
     try:
         async with AsyncSessionLocal() as db:
-            await run_discovery(model_number, job_id, db)
+            await run_discovery(model_number, job_id, db, post_crawl=post_crawl)
     except Exception as e:
         log.error("discovery.failed", model=model_number, job_id=job_id, error=str(e))
         async with AsyncSessionLocal() as db:
@@ -45,7 +45,7 @@ async def start_discovery(
     await db.commit()
     await db.refresh(job)
 
-    background_tasks.add_task(_run_discovery_bg, body.model_number, job.id)
+    background_tasks.add_task(_run_discovery_bg, body.model_number, job.id, post_crawl=False)
     return job
 
 

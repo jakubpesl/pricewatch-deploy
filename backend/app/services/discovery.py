@@ -57,16 +57,21 @@ async def run_discovery(
         ("ceneo",           CeneoPLScraper()),
     ]
 
+    SCRAPER_TIMEOUT = 45  # seconds per scraper
+
     async def run_scraper(name: str, scraper) -> tuple[str, list[ScrapedRetailer]]:
         try:
-            results = await scraper.discover(model_number)
+            results = await asyncio.wait_for(scraper.discover(model_number), timeout=SCRAPER_TIMEOUT)
             log.info("discovery.scraper_done", name=name, count=len(results))
             return name, results
+        except asyncio.TimeoutError:
+            log.warning("discovery.scraper_timeout", name=name, timeout=SCRAPER_TIMEOUT)
+            return name, []
         except Exception as e:
             log.error("discovery.scraper_error", name=name, error=str(e))
             return name, []
 
-    # Limit to 1 concurrent scraper to stay within 512MB RAM (Render free tier)
+    # Run scrapers sequentially (1 at a time) to stay within Render free tier RAM (512MB)
     semaphore = asyncio.Semaphore(1)
     async def bounded_scraper(name: str, scraper):
         async with semaphore:
