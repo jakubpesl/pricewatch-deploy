@@ -4,7 +4,12 @@ from app.core.config import settings
 
 
 _db_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-engine = create_async_engine(_db_url, echo=settings.ENVIRONMENT == "development")
+_connect_args = {"ssl": "require"} if "supabase.com" in _db_url else {}
+engine = create_async_engine(
+    _db_url,
+    echo=settings.ENVIRONMENT == "development",
+    connect_args=_connect_args,
+)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
