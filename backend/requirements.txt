@@ -12,7 +12,6 @@ alembic==1.14.0
 pgvector==0.3.6
 
 # Scraping
-playwright==1.49.0
 httpx==0.28.1
 beautifulsoup4==4.12.3
 lxml==5.3.0

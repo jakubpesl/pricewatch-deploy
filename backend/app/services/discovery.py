@@ -9,11 +9,10 @@ from sqlalchemy import select
 from app.models.product import Product, ProductRetailer, PricePoint
 from app.models.job import DiscoveryJob, JobStatus
 from app.scrapers.base import ScrapedRetailer
-from app.scrapers.heureka import HeurekaScraper
-from app.scrapers.idealo import IdealoScraper
-from app.scrapers.google_shopping import GoogleShoppingScraper, GoogleOrganicScraper
-from app.scrapers.price_comparators import ZboziScraper, GeizhalsScraper, BingShoppingScraper, CeneoPLScraper
-from app.scrapers.product_page import ProductPageScraper
+from app.scrapers.httpx_scrapers import (
+    HeurekaHttpxScraper, ZboziHttpxScraper,
+    GeizhalsHttpxScraper, CeneoHttpxScraper, NoopScraper,
+)
 from datetime import datetime, timezone
 import structlog
 
@@ -47,14 +46,14 @@ async def run_discovery(
     sources_completed: list[str] = []
 
     scrapers = [
-        ("heureka",         HeurekaScraper()),
-        ("idealo",          IdealoScraper()),
-        ("google_shopping", GoogleShoppingScraper()),
-        ("google_organic",  GoogleOrganicScraper()),
-        ("zbozi",           ZboziScraper()),
-        ("geizhals",        GeizhalsScraper()),
-        ("bing_shopping",   BingShoppingScraper()),
-        ("ceneo",           CeneoPLScraper()),
+        ("heureka",         HeurekaHttpxScraper()),
+        ("zbozi",           ZboziHttpxScraper()),
+        ("geizhals",        GeizhalsHttpxScraper()),
+        ("ceneo",           CeneoHttpxScraper()),
+        ("idealo",          NoopScraper("idealo")),
+        ("google_shopping", NoopScraper("google_shopping")),
+        ("google_organic",  NoopScraper("google_organic")),
+        ("bing_shopping",   NoopScraper("bing_shopping")),
     ]
 
     SCRAPER_TIMEOUT = 45  # seconds per scraper
