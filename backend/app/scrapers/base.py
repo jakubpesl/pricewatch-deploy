@@ -2,7 +2,12 @@ import asyncio
 import random
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+try:
+    from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+    _PLAYWRIGHT = True
+except ImportError:
+    _PLAYWRIGHT = False
+    Browser = BrowserContext = Page = object  # type: ignore[assignment,misc]
 from fake_useragent import UserAgent
 from app.core.config import settings
 import structlog
